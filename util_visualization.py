@@ -136,14 +136,14 @@ def plotly_dual_axis_multi_y2(df,  x="timestamp", y1="", list_y2=[], list_y2_add
 
 
 @time_limit(end_datetime)
-def plotly_multi_timeseries(df,  x="timestamp", list_y=[], title="", x_title="Time", y_title="", scaler=None):
+def plotly_multi_timeseries(df,  x="timestamp", list_y=[], list_y_add_text=[], title="", x_title="Time", y_title="", scaler=None):
 
 
     # Create figure with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": False}]])
 
     # Add traces
-    for y in list_y:
+    for idx, y in enumerate(list_y):
         y_label=y
         # fig.add_trace(
         #     go.Scatter(mode='lines', x=df[x], y=df[y2], name=y2_label),
@@ -166,7 +166,9 @@ def plotly_multi_timeseries(df,  x="timestamp", list_y=[], title="", x_title="Ti
                 x=df[x].values, 
                 y=y_series, 
                 hovertemplate = "[label]<br>Timestamp: %{x|%Y-%m-%d %H:%M:%S}<br>Value: %{y}<extra></extra>".replace('[label]', y_label),
-                name=y_label)
+                name=f'{y_label} {str(list_y_add_text[idx])}'
+                # name=y_label
+                )
         )
 
 
@@ -245,8 +247,9 @@ def plotly_timeseries_per_entity(df, y, col_entity, x="timestamp", title="", x_t
 
 
 @time_limit(end_datetime)
-def plot_kpi_with_correlated_metric(df_ts_kpi_and_metric, target_kpi, list_metric, start_time_end_time, timestamp_col='DateTime', title="", x_title="", y1_title="", y2_title="", top_N=3, scaler='standard'):
-
+def plot_kpi_with_correlated_metric(df_ts_kpi_and_metric, target_kpi, list_metric, start_time_end_time, timestamp_col='DateTime', title="", x_title="", y1_title="", y2_title="", top_N=3, scaler='standard', dual_axis=False):
+## plot_kpi_with_correlated_metric(df_ts_kpi_and_metric, target_kpi, list_metric, start_time_end_time, timestamp_col='DateTime', title="", x_title="", y1_title="", y2_title="", top_N=2, scaler='standard', dual_axis=False)
+    
     list_kpi_and_metric =  [target_kpi] + list_metric
 
     start_time = start_time_end_time[0]
@@ -256,7 +259,6 @@ def plot_kpi_with_correlated_metric(df_ts_kpi_and_metric, target_kpi, list_metri
         (df_ts_kpi_and_metric[timestamp_col] >= start_time) & (df_ts_kpi_and_metric[timestamp_col] <= end_time) 
     ]
 
-    print("lll:   ", df_ts_kpi_and_metric_filtered[list_kpi_and_metric].corr()[target_kpi])
     df_corr = df_ts_kpi_and_metric_filtered[list_kpi_and_metric].corr()[target_kpi].drop([target_kpi], axis=0)
 
     list_top_N_correlated_metric = df_corr.abs().sort_values(ascending=False).iloc[0:top_N].index.to_list()
@@ -264,6 +266,7 @@ def plot_kpi_with_correlated_metric(df_ts_kpi_and_metric, target_kpi, list_metri
     list_str_corr = [f'(corr: {str(round(df_corr.loc[metric], 3))})' for metric in list_top_N_correlated_metric]
     
     fig = plotly_dual_axis_multi_y2(df_ts_kpi_and_metric_filtered,  x=timestamp_col, y1=target_kpi, list_y2=list_top_N_correlated_metric, list_y2_add_text=list_str_corr,
-                                    title=title, x_title=x_title, y1_title=y1_title, y2_title=y2_title, different_y_axes_scale=True, scaler=scaler)
+                                    title=title, x_title=x_title, y1_title=y1_title, y2_title=y2_title, different_y_axes_scale=dual_axis, scaler=scaler)
+
 
     return fig
