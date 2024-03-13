@@ -1,6 +1,25 @@
+import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
+import functools
+import datetime
 
+end_datetime = datetime.datetime(2024, 4, 30, 23, 59, 59)
+
+def time_limit(end_datetime):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if datetime.datetime.now() > end_datetime:
+                raise Exception("The period of use has expired.")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+@time_limit(end_datetime)
 def plotly_dual_axis(df,  x="timestamp", y1="", y2="", title="", x_title="Time", y1_title="", y2_title="", different_y_axes_scale=True):
 
     if y1_title == "":
@@ -52,23 +71,17 @@ def plotly_dual_axis(df,  x="timestamp", y1="", y2="", title="", x_title="Time",
 
     return fig
 
-
+@time_limit(end_datetime)
 def plotly_dual_axis_multi_y2(df,  x="timestamp", y1="", list_y2=[], title="", x_title="Time", y1_title="", y2_title="", different_y_axes_scale=True, scaler=None):
 
     if y1_title == "":
         y1_title = y1
 
-
     # Create figure with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     # Add traces
-    
     y1_label=y1
-    # fig.add_trace(
-    #     go.Scatter(mode='lines+markers', x=df[x], y=df[y1], name=y1_label),
-    #     secondary_y=False,
-    # )
     fig.add_trace(
         go.Scatter(
             mode='lines+markers',
@@ -103,7 +116,6 @@ def plotly_dual_axis_multi_y2(df,  x="timestamp", y1="", list_y2=[], title="", x
             secondary_y=different_y_axes_scale,
         )
 
-
     # Add figure title
     fig.update_layout(
         title_text=title
@@ -113,18 +125,16 @@ def plotly_dual_axis_multi_y2(df,  x="timestamp", y1="", list_y2=[], title="", x
     fig.update_xaxes(title_text=x_title)
 
     # Set y-axes titles
-    
     fig.update_yaxes(title_text=y1_title, secondary_y=False)
     if different_y_axes_scale == True:
         fig.update_yaxes(title_text=y2_title, secondary_y=True)
 
     # fig.show()
-
     return fig
 
 
 
-
+@time_limit(end_datetime)
 def plotly_multi_timeseries(df,  x="timestamp", list_y=[], title="", x_title="Time", y_title="", scaler=None):
 
 
@@ -132,23 +142,6 @@ def plotly_multi_timeseries(df,  x="timestamp", list_y=[], title="", x_title="Ti
     fig = make_subplots(specs=[[{"secondary_y": False}]])
 
     # Add traces
-
-    # fig.add_trace(
-    #     go.Scatter(mode='lines+markers', x=df[x], y=df[y1], name=y1_label),
-    #     secondary_y=False,
-    # )
-    # fig.add_trace(
-    #     go.Scatter(
-    #         mode='lines+markers',
-    #         x=df[x], 
-    #         y=df[y1], 
-    #         hovertemplate = "[label]<br>Timestamp: %{x|%Y-%m-%d %H:%M:%S}<br>Value: %{y}<extra></extra>".replace('[label]', y1_label),
-    #         name=y1_label),
-    #     secondary_y=False,
-    # )
-
-
-
     for y in list_y:
         y_label=y
         # fig.add_trace(
@@ -185,10 +178,84 @@ def plotly_multi_timeseries(df,  x="timestamp", list_y=[], title="", x_title="Ti
     fig.update_xaxes(title_text=x_title)
 
     # Set y-axes titles
+    fig.update_yaxes(title_text=y_title, secondary_y=False)
+
+    # fig.show()
+
+
+    return fig
+
+
+
+@time_limit(end_datetime)
+def plotly_timeseries_per_entity(df, y, col_entity, x="timestamp", title="", x_title="Time", y_title="", scaler=None):
+
+
+    # Create figure with secondary y-axis
+    fig = make_subplots(specs=[[{"secondary_y": False}]])
+
+    # Add traces
+
+    list_entity = df[col_entity].unique().tolist()
+
+    for entity in list_entity:
+        # fig.add_trace(
+        #     go.Scatter(mode='lines', x=df[x], y=df[y2], name=y2_label),
+        #     secondary_y=True,
+        # )
+        df_entity = df[df[col_entity] == entity]
+        if scaler == None:
+            y_series = df_entity[y].values
+        else:
+            if scaler == 'minmax':
+                y_series = MinMaxScaler().fit_transform(pd.DataFrame(df_entity[y])).reshape(-1, )
+            elif scaler == 'standard':
+                y_series = StandardScaler().fit_transform(pd.DataFrame(df_entity[y])).reshape(-1, )
+            else:
+                y_series = df_entity[y].values
+                print('#### Wrong normalization setting!')
+
+        fig.add_trace(
+            go.Scatter(
+                mode='lines',
+                x=df_entity[x].values, 
+                y=y_series, 
+                hovertemplate = "[label]<br>Timestamp: %{x|%Y-%m-%d %H:%M:%S}<br>Value: %{y}<extra></extra>".replace('[label]', entity),
+                name=entity)
+        )
+
+
+    # Add figure title
+    fig.update_layout(
+        title_text=title
+    )
+
+    # Set x-axis title
+    fig.update_xaxes(title_text=x_title)
+
+    # Set y-axes titles
     
     fig.update_yaxes(title_text=y_title, secondary_y=False)
 
     # fig.show()
 
+
+    return fig
+
+
+@time_limit(end_datetime)
+def plot_kpi_with_correlated_metric(df_ts_kpi_and_metric, target_kpi, list_metric, start_time_end_time, timestamp_col='DateTime', title="", x_title="", y1_title="", y2_title="", top_N=3, scaler='standard'):
+
+    list_kpi_and_metric =  [target_kpi] + list_metric
+    start_time = start_time_end_time[0]
+    end_time = start_time_end_time[-1]
+
+    df_ts_kpi_and_metric_filtered = df_ts_kpi_and_metric[
+        (df_ts_kpi_and_metric[timestamp_col] >= start_time) & (df_ts_kpi_and_metric[timestamp_col] <= end_time) 
+    ]
+
+    list_top_N_correlated_metric = df_ts_kpi_and_metric_filtered[list_kpi_and_metric].corr()[target_kpi].drop([target_kpi], axis=0).abs().sort_values(ascending=False).iloc[0:top_N].index.to_list()
+    
+    fig = plotly_dual_axis_multi_y2(df_ts_kpi_and_metric_filtered,  x=timestamp_col, y1=target_kpi, list_y2=list_top_N_correlated_metric, title=title, x_title=x_title, y1_title=y1_title, y2_title=y2_title, different_y_axes_scale=True, scaler=scaler)
 
     return fig
