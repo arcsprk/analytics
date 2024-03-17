@@ -138,7 +138,6 @@ def plotly_dual_axis_multi_y2(df,  x="timestamp", y1="", list_y2=[], list_y2_add
 @time_limit(end_datetime)
 def plotly_multi_timeseries(df,  x="timestamp", list_y=[], list_y_add_text=[], title="", x_title="Time", y_title="", scaler=None):
 
-
     # Create figure with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": False}]])
 
@@ -171,7 +170,6 @@ def plotly_multi_timeseries(df,  x="timestamp", list_y=[], list_y_add_text=[], t
                 )
         )
 
-
     # Add figure title
     fig.update_layout(
         title_text=title
@@ -183,9 +181,6 @@ def plotly_multi_timeseries(df,  x="timestamp", list_y=[], list_y_add_text=[], t
     # Set y-axes titles
     fig.update_yaxes(title_text=y_title, secondary_y=False)
 
-    # fig.show()
-
-
     return fig
 
 
@@ -193,12 +188,10 @@ def plotly_multi_timeseries(df,  x="timestamp", list_y=[], list_y_add_text=[], t
 @time_limit(end_datetime)
 def plotly_timeseries_per_entity(df, y, col_entity, x="timestamp", title="", x_title="Time", y_title="", scaler=None):
 
-
     # Create figure with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": False}]])
 
     # Add traces
-
     list_entity = df[col_entity].unique().tolist()
 
     for entity in list_entity:
@@ -227,7 +220,6 @@ def plotly_timeseries_per_entity(df, y, col_entity, x="timestamp", title="", x_t
                 name=entity)
         )
 
-
     # Add figure title
     fig.update_layout(
         title_text=title
@@ -237,11 +229,7 @@ def plotly_timeseries_per_entity(df, y, col_entity, x="timestamp", title="", x_t
     fig.update_xaxes(title_text=x_title)
 
     # Set y-axes titles
-    
     fig.update_yaxes(title_text=y_title, secondary_y=False)
-
-    # fig.show()
-
 
     return fig
 
